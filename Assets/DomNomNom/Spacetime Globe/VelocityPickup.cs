@@ -7,12 +7,14 @@ using VRC.Udon;
 
 public class VelocityPickup : UdonSharpBehaviour
 {
-    PositionConstraint constraint;
+    public PositionConstraint constraint;
+
     void OnPickup() {
-        constraint.constraintActive = true;
+        constraint.enabled = true;
     }
+
     void OnDrop() {
-        constraint.constraintActive = false;
+        constraint.enabled = false;
         transform.position = constraint.transform.position;
     }
 }

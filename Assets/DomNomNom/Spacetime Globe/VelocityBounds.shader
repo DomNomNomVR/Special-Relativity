@@ -49,12 +49,31 @@ v2f vert (appdata v)  {
 }
 
 
-float4 frag (v2f i) : SV_Target  {
+float3 frag (v2f i) : SV_Target  {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+    float3 col = float3(0,0,0);
+
     float r = 2*length(i.uv0);
-    float intensity = r*r*r* smoothstep(1, .99, r);
-    float4 col = float4(0,0,intensity,1);
-    // col = tex2D(_MainTexture, i.uv0);
+    float fw = fwidth(r);
+
+    float rim = r*r*r* smoothstep(1, 1-fw, r);
+    col += .5 * rim * float3(.1, .1, .8);
+    // {
+    //     float wd = .5*fwidth(i.uv0.y);
+    //     float line_opacity = smoothstep(2*wd, wd, abs(i.uv0.y));
+    //     col += line_opacity * float3(1,1,1);
+    // }
+
+    {
+        // draw a ring where we get a time dilation factor of 2.
+        // 2=1/sqrt(1-v*v)
+        // .75 = v*v
+        float dilation2 = 0.86602540378;
+        float wd = .4*fw;
+        float line_opacity = smoothstep(2*wd, wd, abs(r-dilation2));
+        col += line_opacity * .3* float3(1,1,1);
+    }
+
     return col;
 }
 
