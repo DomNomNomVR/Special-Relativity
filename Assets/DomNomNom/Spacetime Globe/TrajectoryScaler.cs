@@ -13,6 +13,8 @@ public class TrajectoryScaler : UdonSharpBehaviour {
     public Transform horizontal_scaler;
     public Transform vertical_scaler;
 
+    public float f;
+
     void Start() {}
 
     void Update() {
@@ -29,7 +31,7 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         transform.localScale = localScale;
 
         update_scaler(-vel.z, horizontal_scaler);
-        update_scaler(-vel.y, vertical_scaler);
+        update_scaler(-vel.y * v/vel.z, vertical_scaler);
     }
 
     void update_scaler(float v, Transform t) {
