@@ -177,10 +177,10 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         float l1 = l-1f;
         // https://en.wikipedia.org/wiki/Lorentz_transformation#Proper_transformations
         var m = new Matrix4x4();
-            m.SetRow(0, new Vector4( l,       -l     *v.x,       -l     *v.y,       -l     *v.z     ));
-            m.SetRow(1, new Vector4(-l*v.x,  1+l1*v.x*v.x*div,    l1*v.x*v.y*div,    l1*v.x*v.z*div ));
-            m.SetRow(2, new Vector4(-l*v.y,    l1*v.y*v.x*div,  1+l1*v.y*v.y*div,    l1*v.y*v.z*div ));
-            m.SetRow(3, new Vector4(-l*v.z,    l1*v.z*v.x*div,    l1*v.z*v.y*div,  1+l1*v.z*v.z*div ));
+        m[0,0]=  l     ; m[0,1]=  -l     *v.x     ; m[0,2]=  -l     *v.y     ; m[0,3]=  -l     *v.z      ;
+        m[1,0]= -l*v.x ; m[1,1]= 1+l1*v.x*v.x*div ; m[1,2]=   l1*v.x*v.y*div ; m[1,3]=   l1*v.x*v.z*div  ;
+        m[2,0]= -l*v.y ; m[2,1]=   l1*v.y*v.x*div ; m[2,2]= 1+l1*v.y*v.y*div ; m[2,3]=   l1*v.y*v.z*div  ;
+        m[3,0]= -l*v.z ; m[3,1]=   l1*v.z*v.x*div ; m[3,2]=   l1*v.z*v.y*div ; m[3,3]= 1+l1*v.z*v.z*div  ;
         return m;
     }
 
@@ -188,6 +188,7 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         Vector3 vel = GetComponent<LookAtConstraint>().GetSource(0).sourceTransform.localPosition;
         vel.x = 0;
         if (vel == prev_vel) return; // optimization
+        prev_vel = vel;
 
         float mag = vel.magnitude;
         if (mag > 1) return; // FTL.
@@ -199,7 +200,9 @@ public class TrajectoryScaler : UdonSharpBehaviour {
 
         {
             Vector3 swizzled = new Vector3(vel.z, vel.y, 0f);
+            // Debug.Log(swizzled);
             Matrix4x4 a = boost_matrix(swizzled);
+            // Debug.Log(a);
             // svd.dothething();
             // quaternion q = quaternion.identity;
             // Matrix4x4 a = Matrix4x4.Rotate(q);
@@ -209,6 +212,7 @@ public class TrajectoryScaler : UdonSharpBehaviour {
             // Vector3 q = new Vector3(0.0f, 0.0f, 0.0f);
             // Matrix4x4 a = Matrix4x4.Rotate(q,q,q);
             Vector3 scale = svd.singularValuesDecomposition(a, out Quaternion u, out Quaternion v);
+            // Debug.Log(v);
             svd_u.localRotation = u;
             svd_scale.localScale = scale;
             svd_v.localRotation = v;
