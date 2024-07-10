@@ -159,12 +159,30 @@ public class TrajectoryScaler : UdonSharpBehaviour {
 
     private Vector3 prev_vel = new Vector3(Single.NaN, Single.NaN, Single.NaN);
 
-    public Transform horizontal_scaler;
-    public Transform vertical_scaler;
 
     public float f;
 
+    public Transform svd_u;
+    public Transform svd_scale;
+    public Transform svd_v;
+
     void Start() {}
+
+    Matrix4x4 boost_matrix(Vector3 v) {
+        // assuming speed of light = 1
+        float mag = v.magnitude;
+        float mag_sq = mag*mag;
+        float div = 1f/mag_sq;
+        float l = 1/Mathf.Sqrt(1f-mag_sq);
+        float l1 = l-1f;
+        // https://en.wikipedia.org/wiki/Lorentz_transformation#Proper_transformations
+        var m = new Matrix4x4();
+            m.SetRow(0, new Vector4( l,       -l     *v.x,       -l     *v.y,       -l     *v.z     ));
+            m.SetRow(1, new Vector4(-l*v.x,  1+l1*v.x*v.x*div,    l1*v.x*v.y*div,    l1*v.x*v.z*div ));
+            m.SetRow(2, new Vector4(-l*v.y,    l1*v.y*v.x*div,  1+l1*v.y*v.y*div,    l1*v.y*v.z*div ));
+            m.SetRow(3, new Vector4(-l*v.z,    l1*v.z*v.x*div,    l1*v.z*v.y*div,  1+l1*v.z*v.z*div ));
+        return m;
+    }
 
     void Update() {
         Vector3 vel = GetComponent<LookAtConstraint>().GetSource(0).sourceTransform.localPosition;
@@ -176,11 +194,12 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         float v_sq = mag*mag;
 
         Vector3 localScale = transform.localScale;
-        localScale.z = Mathf.Sqrt((1 + v_sq) / (1 - v_sq));
+        localScale.z = Mathf.Sqrt((1f + v_sq) / (1f - v_sq));
         transform.localScale = localScale;
 
         {
-            Matrix4x4 a = Matrix4x4.identity;
+            Vector3 swizzled = new Vector3(vel.z, vel.y, 0f);
+            Matrix4x4 a = boost_matrix(swizzled);
             // svd.dothething();
             // quaternion q = quaternion.identity;
             // Matrix4x4 a = Matrix4x4.Rotate(q);
@@ -190,6 +209,9 @@ public class TrajectoryScaler : UdonSharpBehaviour {
             // Vector3 q = new Vector3(0.0f, 0.0f, 0.0f);
             // Matrix4x4 a = Matrix4x4.Rotate(q,q,q);
             Vector3 scale = svd.singularValuesDecomposition(a, out Quaternion u, out Quaternion v);
+            svd_u.localRotation = u;
+            svd_scale.localScale = scale;
+            svd_v.localRotation = v;
         }
     }
 
