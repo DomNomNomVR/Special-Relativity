@@ -16,10 +16,19 @@ static class svd{
         x = y;
         y = tmp;
     }
-    static void negSwapCols(Matrix4x4 a, int col0, int col1) {
+
+    static void SetColumn(int col, Vector4 val, ref Matrix4x4 a){
+        // A workaround for a.SetColumn(col, val) because it's not supported in Udon
+        // https://discord.com/channels/419351657743253524/657814494885707806/1260520993261355060
+        a[0, col] = val.x;
+        a[1, col] = val.y;
+        a[2, col] = val.z;
+        a[3, col] = val.w;
+    }
+    static void negSwapCols(ref Matrix4x4 a, int col0, int col1) {
         Vector4 tmp = -a.GetColumn(col0);
-        a.SetColumn(col0, a.GetColumn(col1));
-        a.SetColumn(col1, tmp);
+        SetColumn(col0, a.GetColumn(col1), ref a);
+        SetColumn(col1, tmp, ref a);
     }
 
     public static void sortSingularValues(ref Matrix4x4 b, ref Quaternion v) {
@@ -29,20 +38,22 @@ static class svd{
 
         const float sqrt_half = 0.707106781186548f;
 
+
+
         if (l0 < l1) {
-            negSwapCols(b, 0, 1);
+            negSwapCols(ref b, 0, 1);
             v = v * new Quaternion(0f, 0f, sqrt_half, sqrt_half);
             swap(ref l0, ref l1);
         }
 
         if (l0 < l2){
-            negSwapCols(b, 0, 2);
+            negSwapCols(ref b, 0, 2);
             v = v * new Quaternion(0f, -sqrt_half, 0f, sqrt_half);
             swap(ref l0, ref l2);
         }
 
         if (l1 < l2) {
-            negSwapCols(b, 1, 2);
+            negSwapCols(ref b, 1, 2);
             v = v * new Quaternion(sqrt_half, 0f, 0f, sqrt_half);
         }
     }
@@ -123,7 +134,9 @@ static class svd{
 
         v = jacobiIteration(a.transpose * a);
         var b = a * Matrix4x4.Rotate(v);
+        Debug.Log("1 sortSingularValues b=" + b + " v=" + v);
         sortSingularValues(ref b, ref v);
+        Debug.Log("2 sortSingularValues b=" + b + " v=" + v);
         u = givensQRFactorization(b, out var e);
 
         return new Vector3(e.GetColumn(0).x, e.GetColumn(1).y, e.GetColumn(2).z);
@@ -170,12 +183,12 @@ public class TrajectoryScaler : UdonSharpBehaviour {
 
     Matrix4x4 boost_matrix(Vector3 v) {
         // assuming speed of light = 1
+        // https://en.wikipedia.org/wiki/Lorentz_transformation#Proper_transformations
         float mag = v.magnitude;
         float mag_sq = mag*mag;
         float div = 1f/mag_sq;
         float l = 1/Mathf.Sqrt(1f-mag_sq);
         float l1 = l-1f;
-        // https://en.wikipedia.org/wiki/Lorentz_transformation#Proper_transformations
         var m = new Matrix4x4();
         m[0,0]=  l     ; m[0,1]=  -l     *v.x     ; m[0,2]=  -l     *v.y     ; m[0,3]=  -l     *v.z      ;
         m[1,0]= -l*v.x ; m[1,1]= 1+l1*v.x*v.x*div ; m[1,2]=   l1*v.x*v.y*div ; m[1,3]=   l1*v.x*v.z*div  ;
@@ -200,6 +213,7 @@ public class TrajectoryScaler : UdonSharpBehaviour {
 
         {
             Vector3 swizzled = new Vector3(vel.z, vel.y, 0f);
+            swizzled = new Vector3(Mathf.Sqrt(.75f), 0f, 0f);
             // Debug.Log(swizzled);
             Matrix4x4 a = boost_matrix(swizzled);
             // Debug.Log(a);
@@ -216,6 +230,12 @@ public class TrajectoryScaler : UdonSharpBehaviour {
             svd_u.localRotation = u;
             svd_scale.localScale = scale;
             svd_v.localRotation = v;
+
+            Debug.Log("final Udon matrix math");
+            Debug.Log(u);
+            Debug.Log(scale);
+            Debug.Log(v);
+
         }
     }
 
