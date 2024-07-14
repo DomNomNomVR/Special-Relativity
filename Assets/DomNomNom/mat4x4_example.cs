@@ -8,6 +8,7 @@ using Unity.Mathematics;
 static class svd2
 {
     public static float3x3 scaleMul(float3 s, float3x3 m) => new float3x3(m.c0 * s, m.c1 * s, m.c2 * s);
+    public static float3x3 mulScale(float3x3 m, float3 s) => new float3x3(m.c0 * s.x, m.c1 * s.y, m.c2 * s.z);
 
     public static void condSwap(bool c, ref float x, ref float y)
     {
@@ -196,13 +197,44 @@ public class MenuItemsExample
     }
 
     [MenuItem("DomNomNom/Debug matrix math")]
-    private static void NewMenuOption()
-    {
-        var a = boost_matrix(new Vector3(Mathf.Sqrt(.75f), 0f, 0f));
-        float3 scale = svd2.singularValuesDecomposition(a, out quaternion u, out quaternion v);
-        Debug.Log("final Debug matrix math");
-        Debug.Log(u);
-        Debug.Log(scale);
-        Debug.Log(v);
+    private static void NewMenuOption() {
+
+        {
+            var a = boost_matrix(new Vector3(-0.33f, 0.34f, 0.00f));
+            float3 scale = svd2.singularValuesDecomposition(a, out quaternion u, out quaternion v);
+            Debug.Log("final C# matrix math: u=" +u + "  scale=" + scale + "  v="+v);
+
+            var tp = float3(1.2f, 3.4f, 5.6f);
+            var um = math.float3x3(u);
+            var sm = float3x3(scale.x, 0f,0f, 0f,scale.y,0f, 0f,0f,scale.z);
+            var vm = math.float3x3(v);
+
+            Debug.Log("matmul=" + math.mul(a,tp)
+                +"  svdmul=" + math.mul(u, math.mul(scale, math.mul(v, tp)))
+                +"  svdmat="+ math.mul(um, math.mul(sm, math.mul(vm, tp))));
+        }
+
+
+        {
+
+            var mat = math.float3x3(
+                9f, 1f, 2f,
+                3f, 8f, 4f,
+                5f, 6f, 7f
+            );
+            var inv = svd2.svdInverse(mat);
+            var testIdentity = math.mul(mat, inv);
+            // Debug.Log("testIdentity="+testIdentity);
+            var e = svd2.singularValuesDecomposition(mat, out var u, out var v);
+            var um = math.float3x3(u);
+            var vm = math.float3x3(v);
+            var sm = float3x3(e.x,0f,0f, 0f,e.y,0f, 0f,0f,e.z);
+
+
+            var testReconstruction = math.mul(um, math.mul(sm, math.transpose(vm)));
+            Debug.Log("testReconstruction=" + testReconstruction);
+            // var testAssociative = math.mul(math.mul(um, sm), vm);
+            // Debug.Log("testAssociative=" + testAssociative);
+        }
     }
 }

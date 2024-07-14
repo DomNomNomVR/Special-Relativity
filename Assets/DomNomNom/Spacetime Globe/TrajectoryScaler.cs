@@ -38,8 +38,6 @@ static class svd{
 
         const float sqrt_half = 0.707106781186548f;
 
-
-
         if (l0 < l1) {
             negSwapCols(ref b, 0, 1);
             v = v * new Quaternion(0f, 0f, sqrt_half, sqrt_half);
@@ -134,9 +132,7 @@ static class svd{
 
         v = jacobiIteration(a.transpose * a);
         var b = a * Matrix4x4.Rotate(v);
-        Debug.Log("1 sortSingularValues b=" + b + " v=" + v);
         sortSingularValues(ref b, ref v);
-        Debug.Log("2 sortSingularValues b=" + b + " v=" + v);
         u = givensQRFactorization(b, out var e);
 
         return new Vector3(e.GetColumn(0).x, e.GetColumn(1).y, e.GetColumn(2).z);
@@ -212,33 +208,21 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         transform.localScale = localScale;
 
         {
-            Vector3 swizzled = new Vector3(vel.z, vel.y, 0f);
-            swizzled = new Vector3(Mathf.Sqrt(.75f), 0f, 0f);
+            Vector3 swizzled = new Vector3(-vel.y, -vel.z, 0f);
             // Debug.Log(swizzled);
+            // swizzled = new Vector3(-0.33f, 0.34f, 0.00f);
+
             Matrix4x4 a = boost_matrix(swizzled);
-            // Debug.Log(a);
-            // svd.dothething();
-            // quaternion q = quaternion.identity;
-            // Matrix4x4 a = Matrix4x4.Rotate(q);
-            // Matrix4x4 a = Matrix4x4.Rotate(0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f);
-            // Matrix4x4 a = Matrix4x4.identity;
-            // float4x4 a = float4x4.identity;
-            // Vector3 q = new Vector3(0.0f, 0.0f, 0.0f);
-            // Matrix4x4 a = Matrix4x4.Rotate(q,q,q);
             Vector3 scale = svd.singularValuesDecomposition(a, out Quaternion u, out Quaternion v);
-            // Debug.Log(v);
+            Debug.Log("final U# matrix math: u=" +u + "  scale=" + scale + "  v="+v);
             svd_u.localRotation = u;
             svd_scale.localScale = scale;
-            svd_v.localRotation = v;
-
-            Debug.Log("final Udon matrix math");
-            Debug.Log(u);
-            Debug.Log(scale);
-            Debug.Log(v);
+            svd_v.localRotation = Quaternion.Inverse(v);
 
         }
     }
 
 }
+
 
 
