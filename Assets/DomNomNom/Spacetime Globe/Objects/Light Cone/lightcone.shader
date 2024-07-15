@@ -63,6 +63,8 @@ float4 frag (v2f i) : SV_Target {
     // col.r = r;
     col += smoothstep(fwidth(i.pos_model_scaled.x), 0, abs(i.pos_model_scaled.x));
     col += smoothstep(fwidth(i.pos_model_scaled.y), 0, abs(i.pos_model_scaled.y));
+    col += smoothstep(fwidth(i.pos_model_scaled.x+i.pos_model_scaled.y), 0, abs(i.pos_model_scaled.x+i.pos_model_scaled.y));
+    col += smoothstep(fwidth(i.pos_model_scaled.y-i.pos_model_scaled.x), 0, abs(i.pos_model_scaled.y-i.pos_model_scaled.x));
     float fw_z = fwidth(i.pos_model_scaled.z);
     col += smoothstep(fw_z, 0, abs(frac(i.pos_model_scaled.z +.5) - .5))  * min(1,.03/(fw_z));
     // col.g = fw;
