@@ -9,7 +9,7 @@ Shader "DomNomNom/observer_perspective" {
     SubShader {
         Tags {"IgnoreProjector"="True" "RenderType"="Opaque"}
         // ZWrite Off
-        Cull Back
+        Cull Off
         // Blend one one
         LOD 100
         // GrabPass{ }
@@ -50,17 +50,14 @@ v2f vert (appdata v) {
     return o;
 }
 
+#define TAU 6.28318530718
+
 // Z buffer to linear depth
 inline float MyLinearEyeDepth(float z) {
     // https://forum.unity.com/threads/_zbufferparams-values.39332/
     // https://gist.github.com/hecomi/9580605#file-unitycg-cginc-L359
-    // float far = 50;
-    // float near = 0.01;
-    const float far = 0.01;
+    const float far = 0.01;  // still not sure why it works when these are inverted.
     const float near = 50;
-    // float4 zbuffer_params = float4(1-far/near, far/near, 0,0);
-    // zbuffer_params.z = zbuffer_params.x / far;
-    // zbuffer_params.w = zbuffer_params.y / far;
     const float zbuffer_params_z = (1-far/near) / far;
     const float zbuffer_params_w = 1/near;
     return 1.0 / (zbuffer_params_z * z + zbuffer_params_w);
@@ -72,14 +69,34 @@ inline float LinearEyeDepth2( float z ){
 float4 frag (v2f i) : SV_Target {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
     float4 col = float4(0,0,0,1);
+    // float depth = MyLinearEyeDepth(tex2Dlod(_DepthTexture, float4(i.uv0, 0,0)).r);
     // col = tex2D(_MainTexture, i.uv0);
-    float depth = tex2Dlod(_DepthTexture, float4(i.uv0, 0,0)).r;
-    // depth *= 50;
-    depth = MyLinearEyeDepth(depth);
-    // depth = lerp(0.01, 50, depth); // 0 = near plane, 1 = far plane
-    // depth /= 40;
-    col.r = smoothstep(.05, 0, abs(frac(depth + .5) - .5));
 
+    float2 uv = (i.uv0 - .5)*2; // coordinates from center
+    float theta = atan2(uv.y, uv.x);
+    float over_angle_compensation = .98;  // our camera renders at > 90 degrees, try to sample at 90 degrees
+    float2 uv2 = over_angle_compensation * float2(cos(theta), sin(theta));
+    uv2 = (uv2 +1) / 2;
+
+    float r = length(uv);
+    r *= 7;
+    float depth = MyLinearEyeDepth(tex2D(_DepthTexture, uv2).r);
+    float grid_lines = 0;
+    grid_lines += smoothstep(.05, 0, abs(frac(r + .5) - .5)) * .5;
+    grid_lines += smoothstep(.05 / r, 0, abs(frac(8*theta / TAU + .5) - .5));
+    col += grid_lines * _Tint;
+
+    if (depth <= r && r < depth+1) {
+        col += tex2D(_MainTexture, uv2);
+    }
+    // col.r += ;
+    // if (r > depth) {
+    //     col = float4(1,.5,0,1);
+    // }
+    // if (length(uv) > .5*over_angle_compensation) {
+    //     // col.rg = uv2;
+    //     // col.b = 0;
+    // }
     return col;
 }
 
