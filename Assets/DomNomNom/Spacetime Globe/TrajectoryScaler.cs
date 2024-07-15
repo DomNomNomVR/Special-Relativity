@@ -207,19 +207,12 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         localScale.z = Mathf.Sqrt((1f + v_sq) / (1f - v_sq));
         transform.localScale = localScale;
 
-        {
-            Vector3 swizzled = new Vector3(-vel.y, -vel.z, 0f);
-            // Debug.Log(swizzled);
-            // swizzled = new Vector3(-0.33f, 0.34f, 0.00f);
-
-            Matrix4x4 a = boost_matrix(swizzled);
-            Vector3 scale = svd.singularValuesDecomposition(a, out Quaternion u, out Quaternion v);
-            Debug.Log("final U# matrix math: u=" +u + "  scale=" + scale + "  v="+v);
-            svd_u.localRotation = u;
-            svd_scale.localScale = scale;
-            svd_v.localRotation = Quaternion.Inverse(v);
-
-        }
+        Vector3 swizzled = new Vector3(-vel.y, -vel.z, 0f);
+        Matrix4x4 a = boost_matrix(swizzled);
+        Vector3 scale = svd.singularValuesDecomposition(a, out Quaternion u, out Quaternion v);
+        svd_u.localRotation = u;
+        svd_scale.localScale = scale;
+        svd_v.localRotation = Quaternion.Inverse(v);
     }
 
 }
