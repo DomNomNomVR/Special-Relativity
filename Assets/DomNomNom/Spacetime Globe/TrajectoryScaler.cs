@@ -210,6 +210,10 @@ public class TrajectoryScaler : UdonSharpBehaviour {
         Vector3 swizzled = new Vector3(-vel.y, -vel.z, 0f);
         Matrix4x4 a = boost_matrix(swizzled);
         Vector3 scale = svd.singularValuesDecomposition(a, out Quaternion u, out Quaternion v);
+        if (float.IsNaN(u.x)) {
+            Debug.Log("Ignoring bad SVD at vel=" + vel);
+            return;
+        }
         svd_u.localRotation = u;
         svd_scale.localScale = scale;
         svd_v.localRotation = Quaternion.Inverse(v);
