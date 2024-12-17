@@ -11,7 +11,6 @@ Shader "DomNomNom/base" {
         Cull Back
         Blend one one
         LOD 100
-        // GrabPass{ }
 
         Pass {
 
